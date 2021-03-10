@@ -1,0 +1,12 @@
+apiVersion: v2
+name: grafana-annotations
+description: Adding annotations for helm deployments
+type: application
+version: 0.1.0
+appVersion: latest
+home: https://github.com/zsuzhengdu/grafana-annotations
+sources:
+- https://github.com/zsuzhengdu/grafana-annotations
+maintainers:
+- name: Du Zheng
+  email: zsuzhengdu@gmail.com

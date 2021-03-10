@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "grafana-annotations.fullname" . }}
+  labels:
+    {{- include "grafana-annotations.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{ toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "grafana-annotations.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "grafana-annotations.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+    {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.imagePullSecrets }}
+      - name: {{ . }}
+      {{- end }}
+      {{- end }}
+      serviceAccountName: {{ include "grafana-annotations.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            {{- if .Values.config }}
+            - "-config"
+            - "/config/config.yaml"
+            {{- end }}
+            {{- if .Values.namespaces }}
+            - "-namespaces"
+            - {{ .Values.namespaces | quote }}
+            {{- end }}
+            {{- if .Values.dashboardID }}
+            - "-dashboard-id"
+            - {{ .Values.dashboardID | quote }}
+            {{- end }}
+            {{- if .Values.panelID }}
+            - "-panel-id"
+            - {{ .Values.panelID | quote }}
+            {{- end }}
+            {{- if .Values.grafanaIP }}
+            - "-grafana-ip"
+            - {{ .Values.grafanaIP | quote }}
+            {{- end }}
+            {{- if not .Values.infoMetric }}
+            - "-info-metric=false"
+            {{- end }}
+            {{- if not .Values.timestampMetric }}
+            - "-timestamp-metric=false"
+            {{- end }}
+            {{- if not .Values.latestChartVersion }}
+            - "-latest-chart-version=false"
+            {{- end }}
+            {{- with .Values.intervalDuration }}
+            - "-interval-duration={{ . }}"
+            {{- end }}
+            {{- with .Values.auth }}
+            - "-auth={{ . }}"
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: 9571
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.config }}
+          volumeMounts:
+            - mountPath: /config
+              name: {{ include "grafana-annotations.fullname" . }}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- if .Values.config }}
+      volumes:
+      - name: {{ include "grafana-annotations.fullname" . }}
+        configMap:
+          name: {{ include "grafana-annotations.fullname" . }}
+    {{- end }}

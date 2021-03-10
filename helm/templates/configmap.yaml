@@ -1,0 +1,11 @@
+{{- if .Values.config -}}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+    name: {{ include "grafana-annotations.fullname" . }}
+    labels:
+        {{ include "grafana-annotations.labels" . | nindent 8 }}
+data:
+    config.yaml: |-
+{{ toYaml .Values.config | indent 6}}
+{{- end }}
